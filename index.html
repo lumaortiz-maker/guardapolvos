@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
+<!-- saved from url=(0052)file:///C:/Users/luismariorti/Downloads/index_6.html -->
+<html lang="es"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Guardapolvos Pro - Control de Stock</title>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="./index_files/css2" rel="stylesheet">
     <style>
         :root {
             --bg-primary: #FAFAF8;
@@ -289,6 +289,37 @@
     </style>
 </head>
 <body>
+    <!-- Pantalla de Login -->
+    <div id="loginScreen" style="position: fixed; inset: 0px; background: linear-gradient(135deg, rgb(37, 99, 235) 0%, rgb(124, 58, 237) 100%); display: none; align-items: center; justify-content: center; z-index: 9999;">
+        <div style="
+            background: white; padding: 40px; border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center; max-width: 400px; width: 90%;
+        ">
+            <div style="font-size: 48px; margin-bottom: 16px;">👔</div>
+            <h1 style="font-size: 24px; margin-bottom: 8px; color: #1A1D21;">Guardapolvos Pro</h1>
+            <p style="color: #5A6169; margin-bottom: 24px;">Ingresá la contraseña para continuar</p>
+            
+            <form onsubmit="checkPassword(event)">
+                <input type="password" id="loginPassword" placeholder="Contraseña" style="
+                    width: 100%; padding: 14px 16px; border: 2px solid #E4E7EB;
+                    border-radius: 8px; font-size: 16px; margin-bottom: 16px;
+                    box-sizing: border-box;
+                " autofocus="">
+                <div id="loginError" style="color: #DC2626; font-size: 14px; margin-bottom: 12px; display: none;">
+                    ❌ Contraseña incorrecta
+                </div>
+                <button type="submit" style="
+                    width: 100%; padding: 14px; background: #2563EB; color: white;
+                    border: none; border-radius: 8px; font-size: 16px; font-weight: 600;
+                    cursor: pointer; transition: background 0.2s;
+                " onmouseover="this.style.background=&#39;#1D4ED8&#39;" onmouseout="this.style.background=&#39;#2563EB&#39;">
+                    Ingresar
+                </button>
+            </form>
+        </div>
+    </div>
+
     <div class="loading-overlay" id="loadingOverlay">
         <div class="spinner"></div>
         <p id="loadingText">Conectando...</p>
@@ -315,11 +346,14 @@
                     <div class="spinner-small"></div>
                     <span>Sincronizando...</span>
                 </div>
-                <button class="btn btn-secondary" onclick="refreshData()" id="refreshBtn" disabled>
+                <button class="btn btn-secondary" onclick="refreshData()" id="refreshBtn" disabled="">
                     🔄 Actualizar
                 </button>
-                <button class="btn btn-primary" onclick="switchTab('venta')" id="newSaleBtn" disabled>
+                <button class="btn btn-primary" onclick="switchTab(&#39;venta&#39;)" id="newSaleBtn" disabled="">
                     ➕ Nueva Venta
+                </button>
+                <button class="btn btn-secondary" onclick="logout()" title="Cerrar sesión" style="padding: 10px 12px;">
+                    🚪
                 </button>
             </div>
         </header>
@@ -348,15 +382,15 @@
 
         <!-- Tabs -->
         <div class="tabs">
-            <button class="tab active" data-tab="config">⚙️ Configuración</button>
-            <button class="tab" data-tab="stock">📦 Stock</button>
+            <button class="tab" data-tab="config">⚙️ Configuración</button>
+            <button class="tab active" data-tab="stock">📦 Stock</button>
             <button class="tab" data-tab="venta">🛒 Nueva Venta</button>
             <button class="tab" data-tab="historial">📋 Historial</button>
             <button class="tab" data-tab="analisis">📈 Análisis</button>
         </div>
 
         <!-- Panel: Configuración -->
-        <div class="panel active" id="panel-config">
+        <div class="panel" id="panel-config">
             <div class="config-section">
                 <h2>🔗 Conectar con Google Sheets</h2>
                 <p>Pegá la URL del script de Google Apps Script para conectar tu hoja de cálculo.</p>
@@ -395,7 +429,7 @@
         </div>
 
         <!-- Panel: Stock -->
-        <div class="panel" id="panel-stock">
+        <div class="panel active" id="panel-stock">
             <div class="alerts-summary">
                 <div class="alert-card critical" id="alertCritical" style="display: none;">
                     <span style="font-size: 24px;">🚨</span>
@@ -418,6 +452,9 @@
                 </select>
                 <select id="filterModelo" onchange="filterStockTable()" style="padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 14px;">
                     <option value="">Todos los modelos</option>
+                </select>
+                <select id="filterTalle" onchange="filterStockTable()" style="padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 14px;">
+                    <option value="">Todos los talles</option>
                 </select>
                 <select id="filterEstado" onchange="filterStockTable()" style="padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 14px;">
                     <option value="">Todos los estados</option>
@@ -467,29 +504,29 @@
                     <div class="form-grid">
                         <div class="form-group">
                             <label>Modelo</label>
-                            <select id="modelo" required>
+                            <select id="modelo" required="">
                                 <option value="">Seleccionar...</option>
                             </select>
                         </div>
                         <div class="form-group">
                             <label>Color</label>
-                            <select id="color" required>
+                            <select id="color" required="">
                                 <option value="">Seleccionar...</option>
                             </select>
                         </div>
                         <div class="form-group">
                             <label>Talle</label>
-                            <select id="talle" required>
+                            <select id="talle" required="">
                                 <option value="">Seleccionar...</option>
                             </select>
                         </div>
                         <div class="form-group">
                             <label>Cantidad</label>
-                            <input type="number" id="cantidad" min="1" value="1" required>
+                            <input type="number" id="cantidad" min="1" value="1" required="">
                         </div>
                         <div class="form-group">
                             <label>Canal</label>
-                            <select id="canal" required>
+                            <select id="canal" required="">
                                 <option value="">Seleccionar...</option>
                                 <option value="Tienda NUBE">Tienda Nube</option>
                                 <option value="SHOWROOM">Showroom</option>
@@ -519,7 +556,7 @@
                         <button type="submit" class="btn btn-success" style="flex: 1;" id="submitSaleBtn">
                             ✓ Guardar en Google Sheets
                         </button>
-                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('saleForm').reset()">
+                        <button type="button" class="btn btn-secondary" onclick="document.getElementById(&#39;saleForm&#39;).reset()">
                             Limpiar
                         </button>
                     </div>
@@ -576,6 +613,34 @@
     </div>
 
     <script>
+        // ========== LOGIN ==========
+        const APP_PASSWORD = 'guardapolvos2026';
+        
+        // Verificar si ya está logueado
+        if (localStorage.getItem('guardapolvos_logged_in') === 'true') {
+            document.getElementById('loginScreen').style.display = 'none';
+        }
+        
+        function checkPassword(e) {
+            e.preventDefault();
+            const password = document.getElementById('loginPassword').value;
+            
+            if (password === APP_PASSWORD) {
+                localStorage.setItem('guardapolvos_logged_in', 'true');
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('loginError').style.display = 'none';
+            } else {
+                document.getElementById('loginError').style.display = 'block';
+                document.getElementById('loginPassword').value = '';
+                document.getElementById('loginPassword').focus();
+            }
+        }
+        
+        function logout() {
+            localStorage.removeItem('guardapolvos_logged_in');
+            location.reload();
+        }
+
         // ========== ESTADO GLOBAL ==========
         let appState = {
             scriptUrl: null,
@@ -848,21 +913,31 @@
             // Poblar filtros
             const colores = [...new Set(stock.map(s => s.Color).filter(Boolean))].sort();
             const modelos = [...new Set(stock.map(s => s.Modelo).filter(Boolean))].sort();
+            const talles = [...new Set(stock.map(s => s.Talle).filter(Boolean))].sort((a,b) => {
+                const numA = parseInt(a) || 999;
+                const numB = parseInt(b) || 999;
+                return numA - numB;
+            });
             
             const filterColor = document.getElementById('filterColor');
             const filterModelo = document.getElementById('filterModelo');
+            const filterTalle = document.getElementById('filterTalle');
             
             // Mantener selección actual
             const currentColor = filterColor.value;
             const currentModelo = filterModelo.value;
+            const currentTalle = filterTalle.value;
             
             filterColor.innerHTML = '<option value="">Todos los colores</option>' + 
                 colores.map(c => `<option value="${c}">${c}</option>`).join('');
             filterModelo.innerHTML = '<option value="">Todos los modelos</option>' + 
                 modelos.map(m => `<option value="${m}">${m}</option>`).join('');
+            filterTalle.innerHTML = '<option value="">Todos los talles</option>' + 
+                talles.map(t => `<option value="${t}">${t}</option>`).join('');
             
             filterColor.value = currentColor;
             filterModelo.value = currentModelo;
+            filterTalle.value = currentTalle;
 
             tbody.innerHTML = stock.map(item => {
                 const stockActual = parseInt(item.StockActual) || 0;
@@ -887,7 +962,7 @@
                 }
 
                 return `
-                    <tr data-status="${status}" data-color="${item.Color || ''}" data-modelo="${item.Modelo || ''}" data-search="${(item.Color + ' ' + item.Modelo + ' ' + item.Talle).toLowerCase()}">
+                    <tr data-status="${status}" data-color="${item.Color || ''}" data-modelo="${item.Modelo || ''}" data-talle="${item.Talle || ''}" data-search="${(item.Color + ' ' + item.Modelo + ' ' + item.Talle).toLowerCase()}">
                         <td><strong>${item.Color || '-'}</strong></td>
                         <td>${item.Modelo || '-'}</td>
                         <td style="text-align: center;">${item.Talle || '-'}</td>
@@ -911,6 +986,7 @@
             const searchTerm = document.getElementById('searchStock').value.toLowerCase();
             const colorFilter = document.getElementById('filterColor').value;
             const modeloFilter = document.getElementById('filterModelo').value;
+            const talleFilter = document.getElementById('filterTalle').value;
             const estadoFilter = document.getElementById('filterEstado').value;
             
             document.querySelectorAll('#stockTableBody tr').forEach(row => {
@@ -919,9 +995,10 @@
                 const matchSearch = !searchTerm || row.dataset.search.includes(searchTerm);
                 const matchColor = !colorFilter || row.dataset.color === colorFilter;
                 const matchModelo = !modeloFilter || row.dataset.modelo === modeloFilter;
+                const matchTalle = !talleFilter || row.dataset.talle === talleFilter;
                 const matchEstado = !estadoFilter || row.dataset.status === estadoFilter;
                 
-                row.style.display = matchSearch && matchColor && matchModelo && matchEstado ? '' : 'none';
+                row.style.display = matchSearch && matchColor && matchModelo && matchTalle && matchEstado ? '' : 'none';
             });
         }
 
@@ -1039,5 +1116,6 @@
             setTimeout(() => toast.classList.remove('show'), 3500);
         }
     </script>
-</body>
-</html>
+
+
+</body></html>
