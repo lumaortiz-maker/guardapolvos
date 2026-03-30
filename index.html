@@ -107,6 +107,7 @@
             padding: 20px; border: 1px solid var(--border); transition: all 0.2s;
         }
         .stat-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+        .stat-card.alert { border-left: 4px solid var(--accent-red); }
         .stat-label {
             font-size: 12px; color: var(--text-muted); text-transform: uppercase;
             letter-spacing: 0.5px; margin-bottom: 8px; font-family: 'Space Mono', monospace;
@@ -326,9 +327,14 @@
         <!-- Stats -->
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-label">Total Movimientos</div>
-                <div class="stat-value" id="totalMovimientos">-</div>
+                <div class="stat-label">Stock Total</div>
+                <div class="stat-value" id="totalStock">-</div>
                 <div class="stat-sub" id="lastUpdate">Sin conexión</div>
+            </div>
+            <div class="stat-card" id="alertCard">
+                <div class="stat-label">Alertas Stock</div>
+                <div class="stat-value" id="alertCount">-</div>
+                <div class="stat-sub">Productos bajo mínimo</div>
             </div>
             <div class="stat-card">
                 <div class="stat-label">Ventas</div>
@@ -338,17 +344,13 @@
                 <div class="stat-label">Modelo Top</div>
                 <div class="stat-value" id="topModel" style="font-size: 18px;">-</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-label">Canal Principal</div>
-                <div class="stat-value" id="topChannel" style="font-size: 18px;">-</div>
-            </div>
         </div>
 
         <!-- Tabs -->
         <div class="tabs">
             <button class="tab active" data-tab="config">⚙️ Configuración</button>
-            <button class="tab" data-tab="venta">🛒 Nueva Venta</button>
             <button class="tab" data-tab="stock">📦 Stock</button>
+            <button class="tab" data-tab="venta">🛒 Nueva Venta</button>
             <button class="tab" data-tab="historial">📋 Historial</button>
             <button class="tab" data-tab="analisis">📈 Análisis</button>
         </div>
@@ -376,7 +378,7 @@
                     <ol>
                         <li>Abrí tu <strong>Google Sheet</strong> de guardapolvos</li>
                         <li>Andá a <strong>Extensiones → Apps Script</strong></li>
-                        <li>Borrá el código existente y pegá el código del archivo <code>google_apps_script_backend.js</code></li>
+                        <li>Pegá el código del backend</li>
                         <li>Guardá y hacé clic en <strong>Implementar → Nueva implementación</strong></li>
                         <li>Elegí <strong>Aplicación web</strong>, ejecutar como <strong>Yo</strong>, acceso <strong>Cualquier persona</strong></li>
                         <li>Copiá la <strong>URL</strong> que te da y pegala arriba</li>
@@ -392,11 +394,74 @@
             </div>
         </div>
 
+        <!-- Panel: Stock -->
+        <div class="panel" id="panel-stock">
+            <div class="alerts-summary">
+                <div class="alert-card critical" id="alertCritical" style="display: none;">
+                    <span style="font-size: 24px;">🚨</span>
+                    <div><strong id="criticalCount">0</strong> sin stock</div>
+                </div>
+                <div class="alert-card warning" id="alertWarning" style="display: none;">
+                    <span style="font-size: 24px;">⚠️</span>
+                    <div><strong id="warningCount">0</strong> stock bajo</div>
+                </div>
+                <div class="alert-card ok">
+                    <span style="font-size: 24px;">✅</span>
+                    <div><strong id="okCount">0</strong> OK</div>
+                </div>
+            </div>
+
+            <!-- Filtros -->
+            <div style="display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
+                <select id="filterColor" onchange="filterStockTable()" style="padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 14px;">
+                    <option value="">Todos los colores</option>
+                </select>
+                <select id="filterModelo" onchange="filterStockTable()" style="padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 14px;">
+                    <option value="">Todos los modelos</option>
+                </select>
+                <select id="filterEstado" onchange="filterStockTable()" style="padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 14px;">
+                    <option value="">Todos los estados</option>
+                    <option value="critical">🚨 Sin stock</option>
+                    <option value="low">⚠️ Stock bajo</option>
+                    <option value="ok">✅ OK</option>
+                </select>
+                <div class="search-box">
+                    <span>🔍</span>
+                    <input type="text" placeholder="Buscar..." id="searchStock" onkeyup="filterStockTable()">
+                </div>
+            </div>
+
+            <div class="table-container">
+                <div class="table-header">
+                    <h2>📦 Stock desde BASE_STOCK</h2>
+                    <span id="stockProductCount" style="color: var(--text-muted);">0 productos</span>
+                </div>
+                <div class="table-scroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Color</th>
+                                <th>Modelo</th>
+                                <th>Talle</th>
+                                <th>Temporada</th>
+                                <th style="text-align:center">Stock Inicial</th>
+                                <th style="text-align:center">Stock Actual</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stockTableBody">
+                            <tr><td colspan="7" style="text-align:center; color: var(--text-muted); padding: 40px;">Conectá tu Google Sheet para ver el stock</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <!-- Panel: Nueva Venta -->
         <div class="panel" id="panel-venta">
             <div class="config-section">
                 <h2>⚡ Registrar Nueva Venta</h2>
-                <p>La venta se guardará directamente en tu Google Sheet.</p>
+                <p>La venta se guardará directamente en tu Google Sheet (hoja MOVIMIENTOS).</p>
                 
                 <form id="saleForm" onsubmit="submitSale(event)">
                     <div class="form-grid">
@@ -404,40 +469,18 @@
                             <label>Modelo</label>
                             <select id="modelo" required>
                                 <option value="">Seleccionar...</option>
-                                <option value="CLASICO">Clásico</option>
-                                <option value="RAM AZ">Ram Az</option>
-                                <option value="AZ MONST">Az Monst</option>
-                                <option value="PRIMAVERA">Primavera</option>
-                                <option value="RAM COL">Ram Col</option>
-                                <option value="B.PLUMETI">B.Plumeti</option>
-                                <option value="B.BORLAS">B.Borlas</option>
-                                <option value="GEOMETRICO">Geométrico</option>
-                                <option value="BIES ROJO">Bies Rojo</option>
-                                <option value="ANIMAL PRINT">Animal Print</option>
                             </select>
                         </div>
                         <div class="form-group">
                             <label>Color</label>
                             <select id="color" required>
                                 <option value="">Seleccionar...</option>
-                                <option value="AZ">Azul</option>
-                                <option value="BCO">Blanco</option>
-                                <option value="RAY">Rayado</option>
-                                <option value="CUADRILLE">Cuadrillé</option>
                             </select>
                         </div>
                         <div class="form-group">
                             <label>Talle</label>
                             <select id="talle" required>
                                 <option value="">Seleccionar...</option>
-                                <option value="0">0</option>
-                                <option value="1">1</option>
-                                <option value="2">2</option>
-                                <option value="3">3</option>
-                                <option value="4">4</option>
-                                <option value="5">5</option>
-                                <option value="6">6</option>
-                                <option value="7">7</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -453,6 +496,8 @@
                                 <option value="WHATS APP">WhatsApp</option>
                                 <option value="INSTG">Instagram</option>
                                 <option value="MAYORISTA">Mayorista</option>
+                                <option value="ALICIA">Alicia</option>
+                                <option value="ESCUELA">Escuela</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -479,54 +524,6 @@
                         </button>
                     </div>
                 </form>
-            </div>
-        </div>
-
-        <!-- Panel: Stock -->
-        <div class="panel" id="panel-stock">
-            <div class="alerts-summary">
-                <div class="alert-card critical" id="alertCritical" style="display: none;">
-                    <span style="font-size: 24px;">🚨</span>
-                    <div><strong id="criticalCount">0</strong> sin stock</div>
-                </div>
-                <div class="alert-card warning" id="alertWarning" style="display: none;">
-                    <span style="font-size: 24px;">⚠️</span>
-                    <div><strong id="warningCount">0</strong> stock bajo</div>
-                </div>
-                <div class="alert-card ok">
-                    <span style="font-size: 24px;">✅</span>
-                    <div><strong id="okCount">0</strong> OK</div>
-                </div>
-            </div>
-
-            <div class="table-container">
-                <div class="table-header">
-                    <h2>📦 Stock por Producto</h2>
-                    <div class="search-box">
-                        <span>🔍</span>
-                        <input type="text" placeholder="Buscar..." id="searchStock" onkeyup="filterStockTable()">
-                    </div>
-                </div>
-                <div class="table-scroll">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Producto</th>
-                                <th style="text-align:center">T0</th>
-                                <th style="text-align:center">T1</th>
-                                <th style="text-align:center">T2</th>
-                                <th style="text-align:center">T3</th>
-                                <th style="text-align:center">T4</th>
-                                <th style="text-align:center">T5+</th>
-                                <th style="text-align:center">Total</th>
-                                <th>Estado</th>
-                            </tr>
-                        </thead>
-                        <tbody id="stockTableBody">
-                            <tr><td colspan="9" style="text-align:center; color: var(--text-muted); padding: 40px;">Conectá tu Google Sheet para ver el stock</td></tr>
-                        </tbody>
-                    </table>
-                </div>
             </div>
         </div>
 
@@ -583,10 +580,13 @@
         let appState = {
             scriptUrl: null,
             connected: false,
-            data: [],
+            data: [],       // Movimientos
+            stock: [],      // Stock desde BASE_STOCK
             ventas: [],
             lastSync: null
         };
+
+        const MIN_STOCK = 3; // Stock mínimo para alertas
 
         // ========== INICIALIZACIÓN ==========
         document.addEventListener('DOMContentLoaded', () => {
@@ -633,13 +633,9 @@
             showLoading(true, 'Conectando con Google Sheets...');
 
             try {
-                // Usar fetch con redirect: 'follow' para manejar redirecciones de Google
                 const response = await fetch(url, {
                     method: 'GET',
-                    redirect: 'follow',
-                    headers: {
-                        'Accept': 'application/json',
-                    }
+                    redirect: 'follow'
                 });
                 
                 if (!response.ok) {
@@ -652,8 +648,7 @@
                 try {
                     result = JSON.parse(text);
                 } catch (parseErr) {
-                    console.error('Respuesta no es JSON:', text.substring(0, 200));
-                    throw new Error('La respuesta no es JSON válido. Verificá que el script esté bien configurado.');
+                    throw new Error('La respuesta no es JSON válido.');
                 }
 
                 if (result.error) {
@@ -664,6 +659,7 @@
                 appState.scriptUrl = url;
                 appState.connected = true;
                 appState.data = result.data || [];
+                appState.stock = result.stock || [];
                 appState.ventas = appState.data.filter(r => r.Tipo && r.Tipo.toUpperCase() === 'VENTA');
                 appState.lastSync = new Date();
 
@@ -682,46 +678,31 @@
                 renderStock();
                 renderHistory();
                 renderAnalysis();
+                populateFormSelects();
 
                 document.getElementById('connectionDetails').innerHTML = `
                     <p style="color: var(--accent-green);">✓ Conectado correctamente</p>
                     <p style="font-size: 13px; color: var(--text-secondary); margin-top: 8px;">
-                        ${result.count} registros cargados<br>
-                        Última sincronización: ${new Date().toLocaleTimeString()}
+                        📋 ${result.count || 0} movimientos<br>
+                        📦 ${result.stockCount || 0} productos en stock<br>
+                        🕐 Última sincronización: ${new Date().toLocaleTimeString()}
                     </p>
                 `;
 
-                showToast(`✓ Conectado! ${result.count} registros cargados`, 'success');
+                showToast(`✓ Conectado! ${result.stockCount || 0} productos en stock`, 'success');
 
             } catch (error) {
-                console.error('Error completo:', error);
+                console.error('Error:', error);
                 setConnectionStatus('disconnected');
                 
                 let errorMsg = error.message;
-                let helpText = '';
-                
-                // Detectar error de CORS / Failed to fetch
-                if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError') || error.message.includes('CORS')) {
-                    errorMsg = 'Error de conexión (CORS/Red)';
-                    helpText = `
-                        <div style="margin-top: 12px; padding: 12px; background: var(--accent-amber-light); border-radius: 8px; font-size: 13px;">
-                            <strong>🔧 Posibles soluciones:</strong>
-                            <ol style="margin: 8px 0 0 16px; color: var(--text-secondary);">
-                                <li>Verificá que el script esté <strong>implementado correctamente</strong></li>
-                                <li>En Apps Script, andá a <strong>Implementar → Administrar implementaciones</strong></li>
-                                <li>Eliminá la implementación actual y creá una <strong>nueva</strong></li>
-                                <li>Asegurate que "Quién tiene acceso" sea <strong>"Cualquier persona"</strong></li>
-                                <li>Copiá la <strong>nueva URL</strong> y pegala acá</li>
-                                <li>Si te pide permisos, <strong>aceptalos todos</strong></li>
-                            </ol>
-                        </div>
-                    `;
+                if (error.message.includes('Failed to fetch')) {
+                    errorMsg = 'Error de conexión. Verificá la URL y los permisos del script.';
                 }
                 
-                showToast('Error al conectar: ' + errorMsg, 'error');
+                showToast('Error: ' + errorMsg, 'error');
                 document.getElementById('connectionDetails').innerHTML = `
                     <p style="color: var(--accent-red);">✗ ${errorMsg}</p>
-                    ${helpText}
                 `;
             }
 
@@ -730,7 +711,7 @@
 
         function disconnectSheet() {
             localStorage.removeItem('guardapolvos_script_url');
-            appState = { scriptUrl: null, connected: false, data: [], ventas: [], lastSync: null };
+            appState = { scriptUrl: null, connected: false, data: [], stock: [], ventas: [], lastSync: null };
             
             setConnectionStatus('disconnected');
             document.getElementById('savedUrlInfo').style.display = 'none';
@@ -756,6 +737,7 @@
                 if (result.error) throw new Error(result.error);
 
                 appState.data = result.data || [];
+                appState.stock = result.stock || [];
                 appState.ventas = appState.data.filter(r => r.Tipo && r.Tipo.toUpperCase() === 'VENTA');
                 appState.lastSync = new Date();
 
@@ -763,8 +745,9 @@
                 renderStock();
                 renderHistory();
                 renderAnalysis();
+                populateFormSelects();
 
-                showToast(`✓ Datos actualizados (${result.count} registros)`, 'success');
+                showToast(`✓ Actualizado (${result.stockCount || 0} productos)`, 'success');
 
             } catch (error) {
                 showToast('Error al actualizar: ' + error.message, 'error');
@@ -802,14 +785,12 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action: 'add', data: saleData }),
-                    mode: 'no-cors' // Google Apps Script requiere esto
+                    mode: 'no-cors'
                 });
 
-                // Con no-cors no podemos leer la respuesta, pero si no hay error asumimos éxito
                 document.getElementById('saleForm').reset();
                 showToast(`✓ Venta guardada: ${Math.abs(saleData.Cantidad)}x ${saleData.Modelo}`, 'success');
                 
-                // Refrescar datos después de 2 segundos
                 setTimeout(refreshData, 2000);
 
             } catch (error) {
@@ -822,7 +803,21 @@
 
         // ========== DASHBOARD ==========
         function updateDashboard() {
-            document.getElementById('totalMovimientos').textContent = appState.data.length;
+            // Calcular stock total desde BASE_STOCK
+            const totalStock = appState.stock.reduce((sum, item) => sum + (parseInt(item.StockActual) || 0), 0);
+            document.getElementById('totalStock').textContent = totalStock;
+            
+            // Contar alertas
+            const alertas = appState.stock.filter(item => (parseInt(item.StockActual) || 0) < MIN_STOCK).length;
+            document.getElementById('alertCount').textContent = alertas;
+            
+            const alertCard = document.getElementById('alertCard');
+            if (alertas > 0) {
+                alertCard.classList.add('alert');
+            } else {
+                alertCard.classList.remove('alert');
+            }
+            
             document.getElementById('totalVentas').textContent = appState.ventas.length;
             document.getElementById('lastUpdate').textContent = 'Actualizado: ' + new Date().toLocaleTimeString();
 
@@ -833,82 +828,72 @@
             });
             const topModel = Object.entries(modelCount).sort((a,b) => b[1] - a[1])[0];
             document.getElementById('topModel').textContent = topModel ? topModel[0] : '-';
-
-            // Top canal
-            const canalCount = {};
-            appState.ventas.forEach(v => {
-                if (v.Canal) canalCount[v.Canal] = (canalCount[v.Canal] || 0) + 1;
-            });
-            const topCanal = Object.entries(canalCount).sort((a,b) => b[1] - a[1])[0];
-            document.getElementById('topChannel').textContent = topCanal ? topCanal[0] : '-';
         }
 
         // ========== STOCK ==========
         function renderStock() {
-            const stock = {};
-            const minStock = 3;
-
-            appState.data.forEach(mov => {
-                const key = `${mov.Modelo}|${mov.Color}`;
-                if (!mov.Modelo || !mov.Color) return;
-
-                if (!stock[key]) {
-                    stock[key] = { modelo: mov.Modelo, color: mov.Color, talles: {0:0,1:0,2:0,3:0,4:0,5:0}, total: 0 };
-                }
-
-                const talle = String(mov.Talle || '').trim();
-                let cant = parseFloat(mov.Cantidad) || 0;
-                const tipo = (mov.Tipo || '').toUpperCase();
-
-                if (tipo === 'VENTA' && cant > 0) cant = -cant;
-                if (tipo === 'PRODUCCIÓN' && cant < 0) cant = Math.abs(cant);
-                if (tipo === 'DEVOLUCIÓN') cant = Math.abs(cant);
-
-                const talleKey = parseInt(talle) >= 5 ? 5 : parseInt(talle);
-                if (!isNaN(talleKey) && stock[key].talles.hasOwnProperty(talleKey)) {
-                    stock[key].talles[talleKey] += cant;
-                }
-            });
-
-            Object.values(stock).forEach(s => {
-                s.total = Object.values(s.talles).reduce((a,b) => a + b, 0);
-            });
-
-            const items = Object.values(stock).sort((a,b) => a.total - b.total);
+            const stock = appState.stock;
             const tbody = document.getElementById('stockTableBody');
             
-            let critical = 0, warning = 0, ok = 0;
-
-            if (items.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color: var(--text-muted); padding: 40px;">No hay datos de stock</td></tr>';
+            if (stock.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color: var(--text-muted); padding: 40px;">No hay datos de stock</td></tr>';
+                document.getElementById('stockProductCount').textContent = '0 productos';
                 return;
             }
 
-            tbody.innerHTML = items.map(item => {
-                const colorNames = { AZ: 'Azul', BCO: 'Blanco', RAY: 'Rayado', CUADRILLE: 'Cuadrillé' };
-                let status = 'ok', badge = '<span class="stock-badge stock-ok">✅ OK</span>';
+            document.getElementById('stockProductCount').textContent = `${stock.length} productos`;
+
+            let critical = 0, warning = 0, ok = 0;
+            
+            // Poblar filtros
+            const colores = [...new Set(stock.map(s => s.Color).filter(Boolean))].sort();
+            const modelos = [...new Set(stock.map(s => s.Modelo).filter(Boolean))].sort();
+            
+            const filterColor = document.getElementById('filterColor');
+            const filterModelo = document.getElementById('filterModelo');
+            
+            // Mantener selección actual
+            const currentColor = filterColor.value;
+            const currentModelo = filterModelo.value;
+            
+            filterColor.innerHTML = '<option value="">Todos los colores</option>' + 
+                colores.map(c => `<option value="${c}">${c}</option>`).join('');
+            filterModelo.innerHTML = '<option value="">Todos los modelos</option>' + 
+                modelos.map(m => `<option value="${m}">${m}</option>`).join('');
+            
+            filterColor.value = currentColor;
+            filterModelo.value = currentModelo;
+
+            tbody.innerHTML = stock.map(item => {
+                const stockActual = parseInt(item.StockActual) || 0;
+                const stockInicial = parseInt(item.StockInicial) || 0;
                 
-                if (item.total <= 0) {
-                    status = 'critical'; badge = '<span class="stock-badge stock-critical">🚨 Crítico</span>'; critical++;
-                } else if (item.total < minStock * 3) {
-                    status = 'warning'; badge = '<span class="stock-badge stock-low">⚠️ Bajo</span>'; warning++;
+                let status = 'ok';
+                let badge = '<span class="stock-badge stock-ok">✅ OK</span>';
+                let cellClass = '';
+                
+                if (stockActual <= 0) {
+                    status = 'critical';
+                    badge = '<span class="stock-badge stock-critical">🚨 Sin stock</span>';
+                    cellClass = 'stock-cell zero';
+                    critical++;
+                } else if (stockActual < MIN_STOCK) {
+                    status = 'low';
+                    badge = '<span class="stock-badge stock-low">⚠️ Bajo</span>';
+                    cellClass = 'stock-cell low';
+                    warning++;
                 } else {
                     ok++;
                 }
 
-                const cells = [0,1,2,3,4,5].map(t => {
-                    const val = Math.round(item.talles[t] || 0);
-                    let cls = 'stock-cell';
-                    if (val <= 0) cls += ' zero';
-                    else if (val < minStock) cls += ' low';
-                    return `<td class="${cls}">${val}</td>`;
-                }).join('');
-
                 return `
-                    <tr data-search="${item.modelo.toLowerCase()} ${(colorNames[item.color] || item.color).toLowerCase()}">
-                        <td><strong>${item.modelo}</strong><br><span style="color: var(--text-muted); font-size: 12px;">${colorNames[item.color] || item.color}</span></td>
-                        ${cells}
-                        <td style="text-align:center; font-weight: 700;">${Math.round(item.total)}</td>
+                    <tr data-status="${status}" data-color="${item.Color || ''}" data-modelo="${item.Modelo || ''}" data-search="${(item.Color + ' ' + item.Modelo + ' ' + item.Talle).toLowerCase()}">
+                        <td><strong>${item.Color || '-'}</strong></td>
+                        <td>${item.Modelo || '-'}</td>
+                        <td style="text-align: center;">${item.Talle || '-'}</td>
+                        <td>${item.Temporada || '-'}</td>
+                        <td style="text-align: center;">${stockInicial}</td>
+                        <td class="${cellClass}" style="text-align: center; font-weight: 700; font-size: 16px;">${stockActual}</td>
                         <td>${badge}</td>
                     </tr>
                 `;
@@ -923,11 +908,43 @@
         }
 
         function filterStockTable() {
-            const term = document.getElementById('searchStock').value.toLowerCase();
+            const searchTerm = document.getElementById('searchStock').value.toLowerCase();
+            const colorFilter = document.getElementById('filterColor').value;
+            const modeloFilter = document.getElementById('filterModelo').value;
+            const estadoFilter = document.getElementById('filterEstado').value;
+            
             document.querySelectorAll('#stockTableBody tr').forEach(row => {
-                const search = row.dataset.search || '';
-                row.style.display = search.includes(term) ? '' : 'none';
+                if (!row.dataset.status) return;
+                
+                const matchSearch = !searchTerm || row.dataset.search.includes(searchTerm);
+                const matchColor = !colorFilter || row.dataset.color === colorFilter;
+                const matchModelo = !modeloFilter || row.dataset.modelo === modeloFilter;
+                const matchEstado = !estadoFilter || row.dataset.status === estadoFilter;
+                
+                row.style.display = matchSearch && matchColor && matchModelo && matchEstado ? '' : 'none';
             });
+        }
+
+        // ========== POBLAR SELECTS DEL FORMULARIO ==========
+        function populateFormSelects() {
+            const stock = appState.stock;
+            
+            const colores = [...new Set(stock.map(s => s.Color).filter(Boolean))].sort();
+            const modelos = [...new Set(stock.map(s => s.Modelo).filter(Boolean))].sort();
+            const talles = [...new Set(stock.map(s => s.Talle).filter(Boolean))].sort((a,b) => {
+                const numA = parseInt(a) || 999;
+                const numB = parseInt(b) || 999;
+                return numA - numB;
+            });
+            
+            document.getElementById('color').innerHTML = '<option value="">Seleccionar...</option>' + 
+                colores.map(c => `<option value="${c}">${c}</option>`).join('');
+            
+            document.getElementById('modelo').innerHTML = '<option value="">Seleccionar...</option>' + 
+                modelos.map(m => `<option value="${m}">${m}</option>`).join('');
+            
+            document.getElementById('talle').innerHTML = '<option value="">Seleccionar...</option>' + 
+                talles.map(t => `<option value="${t}">${t}</option>`).join('');
         }
 
         // ========== HISTORIAL ==========
