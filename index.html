@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guardapolvos Pro - Control de Stock</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #FAFAF8;
+            --bg-card: #FFFFFF;
+            --bg-accent: #F0F4F8;
+            --text-primary: #1A1D21;
+            --text-secondary: #5A6169;
+            --text-muted: #8B939C;
+            --border: #E4E7EB;
+            --accent-blue: #2563EB;
+            --accent-blue-light: #EFF6FF;
+            --accent-green: #059669;
+            --accent-green-light: #ECFDF5;
+            --accent-amber: #D97706;
+            --accent-amber-light: #FFFBEB;
+            --accent-red: #DC2626;
+            --accent-red-light: #FEF2F2;
+            --accent-purple: #7C3AED;
+            --accent-purple-light: #F5F3FF;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
+            --shadow-lg: 0 8px 24px rgba(0,0,0,0.08);
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'DM Sans', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.5;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+
+        /* Header */
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 16px 0; margin-bottom: 24px;
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap; gap: 16px;
+        }
+
+        .logo { display: flex; align-items: center; gap: 12px; }
+
+        .logo-icon {
+            width: 44px; height: 44px;
+            background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
+            border-radius: var(--radius-md);
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 20px;
+        }
+
+        .logo-text h1 { font-size: 18px; font-weight: 700; }
+        .logo-text span { font-size: 12px; color: var(--text-muted); font-family: 'Space Mono', monospace; }
+
+        .header-actions { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+
+        /* Connection status */
+        .connection-status {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px 14px; border-radius: var(--radius-sm);
+            font-size: 13px;
+        }
+        .connection-status.connected { background: var(--accent-green-light); color: var(--accent-green); }
+        .connection-status.disconnected { background: var(--accent-red-light); color: var(--accent-red); }
+        .connection-status.connecting { background: var(--accent-amber-light); color: var(--accent-amber); }
+        .status-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: currentColor; animation: pulse 2s infinite;
+        }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 10px 18px; border-radius: var(--radius-sm);
+            font-size: 14px; font-weight: 600; cursor: pointer;
+            transition: all 0.2s ease; border: none; font-family: inherit;
+        }
+        .btn-primary { background: var(--accent-blue); color: white; }
+        .btn-primary:hover { background: #1D4ED8; transform: translateY(-1px); }
+        .btn-primary:disabled { background: var(--text-muted); cursor: not-allowed; transform: none; }
+        .btn-secondary { background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); }
+        .btn-secondary:hover { background: var(--bg-accent); }
+        .btn-success { background: var(--accent-green); color: white; }
+        .btn-success:hover { background: #047857; }
+
+        /* Stats */
+        .stats-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px; margin-bottom: 24px;
+        }
+        .stat-card {
+            background: var(--bg-card); border-radius: var(--radius-md);
+            padding: 20px; border: 1px solid var(--border); transition: all 0.2s;
+        }
+        .stat-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+        .stat-label {
+            font-size: 12px; color: var(--text-muted); text-transform: uppercase;
+            letter-spacing: 0.5px; margin-bottom: 8px; font-family: 'Space Mono', monospace;
+        }
+        .stat-value { font-size: 28px; font-weight: 700; }
+        .stat-sub { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+
+        /* Tabs */
+        .tabs {
+            display: flex; gap: 4px; background: var(--bg-accent);
+            padding: 4px; border-radius: var(--radius-md);
+            margin-bottom: 24px; overflow-x: auto;
+        }
+        .tab {
+            padding: 12px 20px; border-radius: var(--radius-sm);
+            font-size: 14px; font-weight: 500; cursor: pointer;
+            transition: all 0.2s; white-space: nowrap;
+            border: none; background: transparent;
+            color: var(--text-secondary); font-family: inherit;
+        }
+        .tab.active { background: var(--bg-card); color: var(--text-primary); box-shadow: var(--shadow-sm); }
+        .tab:hover:not(.active) { color: var(--text-primary); }
+
+        /* Panels */
+        .panel { display: none; }
+        .panel.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Config section */
+        .config-section {
+            background: var(--bg-card); border-radius: var(--radius-lg);
+            padding: 24px; border: 1px solid var(--border); margin-bottom: 24px;
+        }
+        .config-section h2 { font-size: 18px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+        .config-section p { color: var(--text-secondary); font-size: 14px; margin-bottom: 16px; }
+
+        .url-input-group { display: flex; gap: 12px; margin-bottom: 16px; }
+        .url-input-group input {
+            flex: 1; padding: 14px 16px; border: 1px solid var(--border);
+            border-radius: var(--radius-sm); font-size: 14px; font-family: inherit;
+        }
+        .url-input-group input:focus { outline: none; border-color: var(--accent-blue); box-shadow: 0 0 0 3px var(--accent-blue-light); }
+
+        /* Form */
+        .form-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px;
+        }
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .form-group label {
+            font-size: 12px; font-weight: 600; color: var(--text-secondary);
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .form-group select, .form-group input {
+            padding: 12px 14px; border: 1px solid var(--border);
+            border-radius: var(--radius-sm); font-size: 14px;
+            font-family: inherit; background: var(--bg-primary);
+        }
+        .form-group select:focus, .form-group input:focus {
+            outline: none; border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px var(--accent-blue-light);
+        }
+
+        /* Tables */
+        .table-container {
+            background: var(--bg-card); border-radius: var(--radius-lg);
+            border: 1px solid var(--border); overflow: hidden;
+        }
+        .table-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 16px 20px; border-bottom: 1px solid var(--border);
+            flex-wrap: wrap; gap: 12px;
+        }
+        .table-header h2 { font-size: 16px; font-weight: 600; }
+        .table-scroll { overflow-x: auto; max-height: 500px; overflow-y: auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        th {
+            text-align: left; padding: 12px 16px; font-size: 11px; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            color: var(--text-muted); background: var(--bg-accent);
+            font-family: 'Space Mono', monospace; position: sticky; top: 0; z-index: 10;
+        }
+        td { padding: 12px 16px; font-size: 14px; border-bottom: 1px solid var(--border); }
+        tr:hover td { background: var(--bg-accent); }
+
+        .stock-badge {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;
+        }
+        .stock-ok { background: var(--accent-green-light); color: var(--accent-green); }
+        .stock-low { background: var(--accent-amber-light); color: var(--accent-amber); }
+        .stock-critical { background: var(--accent-red-light); color: var(--accent-red); }
+
+        /* Stock cells */
+        .stock-cell { text-align: center; font-weight: 600; }
+        .stock-cell.zero { color: var(--accent-red); background: var(--accent-red-light); }
+        .stock-cell.low { color: var(--accent-amber); background: var(--accent-amber-light); }
+
+        /* Alerts summary */
+        .alerts-summary { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+        .alert-card {
+            display: flex; align-items: center; gap: 12px;
+            padding: 16px 20px; border-radius: var(--radius-md);
+            font-size: 14px; flex: 1; min-width: 180px;
+        }
+        .alert-card.critical { background: var(--accent-red-light); color: var(--accent-red); border: 1px solid var(--accent-red); }
+        .alert-card.warning { background: var(--accent-amber-light); color: var(--accent-amber); border: 1px solid var(--accent-amber); }
+        .alert-card.ok { background: var(--accent-green-light); color: var(--accent-green); border: 1px solid var(--accent-green); }
+        .alert-card strong { font-size: 24px; }
+
+        /* Search */
+        .search-box {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px 14px; background: var(--bg-primary);
+            border: 1px solid var(--border); border-radius: var(--radius-sm);
+        }
+        .search-box input { border: none; background: transparent; font-size: 14px; width: 150px; }
+        .search-box input:focus { outline: none; }
+
+        /* Charts */
+        .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin-bottom: 24px; }
+        .chart-card { background: var(--bg-card); border-radius: var(--radius-lg); padding: 20px; border: 1px solid var(--border); }
+        .chart-card h3 { font-size: 14px; font-weight: 600; margin-bottom: 16px; color: var(--text-secondary); }
+
+        /* Toast */
+        .toast {
+            position: fixed; bottom: 24px; right: 24px;
+            background: var(--text-primary); color: white;
+            padding: 16px 24px; border-radius: var(--radius-md);
+            display: flex; align-items: center; gap: 12px;
+            box-shadow: var(--shadow-lg); transform: translateY(100px);
+            opacity: 0; transition: all 0.3s; z-index: 2000;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.success { background: var(--accent-green); }
+        .toast.error { background: var(--accent-red); }
+
+        /* Loading */
+        .loading-overlay {
+            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255,255,255,0.9); z-index: 3000;
+            align-items: center; justify-content: center; flex-direction: column; gap: 16px;
+        }
+        .loading-overlay.active { display: flex; }
+        .spinner {
+            width: 48px; height: 48px; border: 4px solid var(--border);
+            border-top-color: var(--accent-blue); border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Sync indicator */
+        .sync-indicator {
+            display: none; align-items: center; gap: 6px;
+            padding: 6px 12px; background: var(--accent-blue-light);
+            color: var(--accent-blue); border-radius: var(--radius-sm);
+            font-size: 12px; font-weight: 500;
+        }
+        .sync-indicator.active { display: flex; }
+        .sync-indicator .spinner-small {
+            width: 14px; height: 14px; border: 2px solid var(--accent-blue-light);
+            border-top-color: var(--accent-blue); border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        /* Instructions */
+        .instructions { background: var(--bg-accent); border-radius: var(--radius-md); padding: 16px; margin-top: 16px; }
+        .instructions h4 { font-size: 14px; margin-bottom: 8px; }
+        .instructions ol { padding-left: 20px; font-size: 13px; color: var(--text-secondary); }
+        .instructions li { margin-bottom: 6px; }
+        .instructions code { background: var(--bg-card); padding: 2px 6px; border-radius: 4px; font-size: 12px; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container { padding: 12px; }
+            .header { flex-direction: column; align-items: flex-start; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .url-input-group { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <p id="loadingText">Conectando...</p>
+    </div>
+
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon">👔</div>
+                <div class="logo-text">
+                    <h1>Guardapolvos Pro</h1>
+                    <span>Base de datos en la nube ☁️</span>
+                </div>
+            </div>
+            
+            <div class="connection-status disconnected" id="connectionStatus">
+                <span class="status-dot"></span>
+                <span id="connectionText">Desconectado</span>
+            </div>
+
+            <div class="header-actions">
+                <div class="sync-indicator" id="syncIndicator">
+                    <div class="spinner-small"></div>
+                    <span>Sincronizando...</span>
+                </div>
+                <button class="btn btn-secondary" onclick="refreshData()" id="refreshBtn" disabled>
+                    🔄 Actualizar
+                </button>
+                <button class="btn btn-primary" onclick="switchTab('venta')" id="newSaleBtn" disabled>
+                    ➕ Nueva Venta
+                </button>
+            </div>
+        </header>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Total Movimientos</div>
+                <div class="stat-value" id="totalMovimientos">-</div>
+                <div class="stat-sub" id="lastUpdate">Sin conexión</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Ventas</div>
+                <div class="stat-value" id="totalVentas">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Modelo Top</div>
+                <div class="stat-value" id="topModel" style="font-size: 18px;">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Canal Principal</div>
+                <div class="stat-value" id="topChannel" style="font-size: 18px;">-</div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" data-tab="config">⚙️ Configuración</button>
+            <button class="tab" data-tab="venta">🛒 Nueva Venta</button>
+            <button class="tab" data-tab="stock">📦 Stock</button>
+            <button class="tab" data-tab="historial">📋 Historial</button>
+            <button class="tab" data-tab="analisis">📈 Análisis</button>
+        </div>
+
+        <!-- Panel: Configuración -->
+        <div class="panel active" id="panel-config">
+            <div class="config-section">
+                <h2>🔗 Conectar con Google Sheets</h2>
+                <p>Pegá la URL del script de Google Apps Script para conectar tu hoja de cálculo.</p>
+                
+                <div id="savedUrlInfo" style="display: none; margin-bottom: 16px; padding: 12px; background: var(--accent-green-light); border-radius: var(--radius-sm); color: var(--accent-green);">
+                    ✓ Conectado a: <span id="savedUrlDisplay"></span>
+                    <button onclick="disconnectSheet()" style="margin-left: 12px; background: none; border: none; color: var(--accent-red); cursor: pointer; font-weight: 600;">Desconectar</button>
+                </div>
+
+                <div class="url-input-group">
+                    <input type="text" id="scriptUrl" placeholder="https://script.google.com/macros/s/xxx/exec">
+                    <button class="btn btn-success" onclick="connectToSheet()">
+                        🔌 Conectar
+                    </button>
+                </div>
+
+                <div class="instructions">
+                    <h4>📋 ¿Cómo obtener la URL?</h4>
+                    <ol>
+                        <li>Abrí tu <strong>Google Sheet</strong> de guardapolvos</li>
+                        <li>Andá a <strong>Extensiones → Apps Script</strong></li>
+                        <li>Borrá el código existente y pegá el código del archivo <code>google_apps_script_backend.js</code></li>
+                        <li>Guardá y hacé clic en <strong>Implementar → Nueva implementación</strong></li>
+                        <li>Elegí <strong>Aplicación web</strong>, ejecutar como <strong>Yo</strong>, acceso <strong>Cualquier persona</strong></li>
+                        <li>Copiá la <strong>URL</strong> que te da y pegala arriba</li>
+                    </ol>
+                </div>
+            </div>
+
+            <div class="config-section">
+                <h2>📊 Estado de la conexión</h2>
+                <div id="connectionDetails">
+                    <p style="color: var(--text-muted);">No hay conexión establecida. Configurá la URL del script para comenzar.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel: Nueva Venta -->
+        <div class="panel" id="panel-venta">
+            <div class="config-section">
+                <h2>⚡ Registrar Nueva Venta</h2>
+                <p>La venta se guardará directamente en tu Google Sheet.</p>
+                
+                <form id="saleForm" onsubmit="submitSale(event)">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Modelo</label>
+                            <select id="modelo" required>
+                                <option value="">Seleccionar...</option>
+                                <option value="CLASICO">Clásico</option>
+                                <option value="RAM AZ">Ram Az</option>
+                                <option value="AZ MONST">Az Monst</option>
+                                <option value="PRIMAVERA">Primavera</option>
+                                <option value="RAM COL">Ram Col</option>
+                                <option value="B.PLUMETI">B.Plumeti</option>
+                                <option value="B.BORLAS">B.Borlas</option>
+                                <option value="GEOMETRICO">Geométrico</option>
+                                <option value="BIES ROJO">Bies Rojo</option>
+                                <option value="ANIMAL PRINT">Animal Print</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Color</label>
+                            <select id="color" required>
+                                <option value="">Seleccionar...</option>
+                                <option value="AZ">Azul</option>
+                                <option value="BCO">Blanco</option>
+                                <option value="RAY">Rayado</option>
+                                <option value="CUADRILLE">Cuadrillé</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Talle</label>
+                            <select id="talle" required>
+                                <option value="">Seleccionar...</option>
+                                <option value="0">0</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6">6</option>
+                                <option value="7">7</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Cantidad</label>
+                            <input type="number" id="cantidad" min="1" value="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Canal</label>
+                            <select id="canal" required>
+                                <option value="">Seleccionar...</option>
+                                <option value="Tienda NUBE">Tienda Nube</option>
+                                <option value="SHOWROOM">Showroom</option>
+                                <option value="WHATS APP">WhatsApp</option>
+                                <option value="INSTG">Instagram</option>
+                                <option value="MAYORISTA">Mayorista</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Método de Pago</label>
+                            <select id="pago">
+                                <option value="">Seleccionar...</option>
+                                <option value="EFECTIVO">Efectivo</option>
+                                <option value="TARJETA">Tarjeta</option>
+                                <option value="TRANSFERENCIA MP">Transf. MP</option>
+                                <option value="TRANSFERENCIA BBVA">Transf. BBVA</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-top: 16px;">
+                        <label>Observación (opcional)</label>
+                        <input type="text" id="observacion" placeholder="Ej: Pedido #123">
+                    </div>
+                    <div style="margin-top: 20px; display: flex; gap: 12px;">
+                        <button type="submit" class="btn btn-success" style="flex: 1;" id="submitSaleBtn">
+                            ✓ Guardar en Google Sheets
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('saleForm').reset()">
+                            Limpiar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Panel: Stock -->
+        <div class="panel" id="panel-stock">
+            <div class="alerts-summary">
+                <div class="alert-card critical" id="alertCritical" style="display: none;">
+                    <span style="font-size: 24px;">🚨</span>
+                    <div><strong id="criticalCount">0</strong> sin stock</div>
+                </div>
+                <div class="alert-card warning" id="alertWarning" style="display: none;">
+                    <span style="font-size: 24px;">⚠️</span>
+                    <div><strong id="warningCount">0</strong> stock bajo</div>
+                </div>
+                <div class="alert-card ok">
+                    <span style="font-size: 24px;">✅</span>
+                    <div><strong id="okCount">0</strong> OK</div>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <div class="table-header">
+                    <h2>📦 Stock por Producto</h2>
+                    <div class="search-box">
+                        <span>🔍</span>
+                        <input type="text" placeholder="Buscar..." id="searchStock" onkeyup="filterStockTable()">
+                    </div>
+                </div>
+                <div class="table-scroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th style="text-align:center">T0</th>
+                                <th style="text-align:center">T1</th>
+                                <th style="text-align:center">T2</th>
+                                <th style="text-align:center">T3</th>
+                                <th style="text-align:center">T4</th>
+                                <th style="text-align:center">T5+</th>
+                                <th style="text-align:center">Total</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stockTableBody">
+                            <tr><td colspan="9" style="text-align:center; color: var(--text-muted); padding: 40px;">Conectá tu Google Sheet para ver el stock</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel: Historial -->
+        <div class="panel" id="panel-historial">
+            <div class="table-container">
+                <div class="table-header">
+                    <h2>📋 Últimos Movimientos</h2>
+                    <div style="display: flex; gap: 8px;">
+                        <select id="filterType" onchange="renderHistory()" style="padding: 8px; border: 1px solid var(--border); border-radius: var(--radius-sm);">
+                            <option value="">Todos</option>
+                            <option value="VENTA">Ventas</option>
+                            <option value="PRODUCCIÓN">Producción</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="table-scroll" id="historyContainer">
+                    <p style="text-align:center; color: var(--text-muted); padding: 40px;">Conectá tu Google Sheet para ver el historial</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel: Análisis -->
+        <div class="panel" id="panel-analisis">
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h3>📊 Ventas por Canal</h3>
+                    <div id="chartCanal"></div>
+                </div>
+                <div class="chart-card">
+                    <h3>👗 Top Modelos</h3>
+                    <div id="chartModelo"></div>
+                </div>
+                <div class="chart-card">
+                    <h3>🎨 Por Color</h3>
+                    <div id="chartColor"></div>
+                </div>
+                <div class="chart-card">
+                    <h3>📏 Por Talle</h3>
+                    <div id="chartTalle"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast">
+        <span id="toastIcon">✓</span>
+        <span id="toastMessage">Mensaje</span>
+    </div>
+
+    <script>
+        // ========== ESTADO GLOBAL ==========
+        let appState = {
+            scriptUrl: null,
+            connected: false,
+            data: [],
+            ventas: [],
+            lastSync: null
+        };
+
+        // ========== INICIALIZACIÓN ==========
+        document.addEventListener('DOMContentLoaded', () => {
+            setupTabs();
+            loadSavedConfig();
+        });
+
+        function setupTabs() {
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+            });
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+            document.getElementById(`panel-${tabId}`).classList.add('active');
+        }
+
+        // ========== CONFIGURACIÓN ==========
+        function loadSavedConfig() {
+            const savedUrl = localStorage.getItem('guardapolvos_script_url');
+            if (savedUrl) {
+                document.getElementById('scriptUrl').value = savedUrl;
+                connectToSheet();
+            }
+        }
+
+        async function connectToSheet() {
+            const url = document.getElementById('scriptUrl').value.trim();
+            
+            if (!url) {
+                showToast('Ingresá la URL del script', 'error');
+                return;
+            }
+
+            if (!url.includes('script.google.com')) {
+                showToast('La URL no parece ser de Google Apps Script', 'error');
+                return;
+            }
+
+            setConnectionStatus('connecting');
+            showLoading(true, 'Conectando con Google Sheets...');
+
+            try {
+                // Usar fetch con redirect: 'follow' para manejar redirecciones de Google
+                const response = await fetch(url, {
+                    method: 'GET',
+                    redirect: 'follow',
+                    headers: {
+                        'Accept': 'application/json',
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const text = await response.text();
+                let result;
+                
+                try {
+                    result = JSON.parse(text);
+                } catch (parseErr) {
+                    console.error('Respuesta no es JSON:', text.substring(0, 200));
+                    throw new Error('La respuesta no es JSON válido. Verificá que el script esté bien configurado.');
+                }
+
+                if (result.error) {
+                    throw new Error(result.error);
+                }
+
+                // Conexión exitosa
+                appState.scriptUrl = url;
+                appState.connected = true;
+                appState.data = result.data || [];
+                appState.ventas = appState.data.filter(r => r.Tipo && r.Tipo.toUpperCase() === 'VENTA');
+                appState.lastSync = new Date();
+
+                // Guardar URL
+                localStorage.setItem('guardapolvos_script_url', url);
+
+                // Actualizar UI
+                setConnectionStatus('connected');
+                document.getElementById('savedUrlInfo').style.display = 'block';
+                document.getElementById('savedUrlDisplay').textContent = url.substring(0, 50) + '...';
+                document.getElementById('refreshBtn').disabled = false;
+                document.getElementById('newSaleBtn').disabled = false;
+                document.getElementById('submitSaleBtn').disabled = false;
+
+                updateDashboard();
+                renderStock();
+                renderHistory();
+                renderAnalysis();
+
+                document.getElementById('connectionDetails').innerHTML = `
+                    <p style="color: var(--accent-green);">✓ Conectado correctamente</p>
+                    <p style="font-size: 13px; color: var(--text-secondary); margin-top: 8px;">
+                        ${result.count} registros cargados<br>
+                        Última sincronización: ${new Date().toLocaleTimeString()}
+                    </p>
+                `;
+
+                showToast(`✓ Conectado! ${result.count} registros cargados`, 'success');
+
+            } catch (error) {
+                console.error('Error completo:', error);
+                setConnectionStatus('disconnected');
+                
+                let errorMsg = error.message;
+                let helpText = '';
+                
+                // Detectar error de CORS / Failed to fetch
+                if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError') || error.message.includes('CORS')) {
+                    errorMsg = 'Error de conexión (CORS/Red)';
+                    helpText = `
+                        <div style="margin-top: 12px; padding: 12px; background: var(--accent-amber-light); border-radius: 8px; font-size: 13px;">
+                            <strong>🔧 Posibles soluciones:</strong>
+                            <ol style="margin: 8px 0 0 16px; color: var(--text-secondary);">
+                                <li>Verificá que el script esté <strong>implementado correctamente</strong></li>
+                                <li>En Apps Script, andá a <strong>Implementar → Administrar implementaciones</strong></li>
+                                <li>Eliminá la implementación actual y creá una <strong>nueva</strong></li>
+                                <li>Asegurate que "Quién tiene acceso" sea <strong>"Cualquier persona"</strong></li>
+                                <li>Copiá la <strong>nueva URL</strong> y pegala acá</li>
+                                <li>Si te pide permisos, <strong>aceptalos todos</strong></li>
+                            </ol>
+                        </div>
+                    `;
+                }
+                
+                showToast('Error al conectar: ' + errorMsg, 'error');
+                document.getElementById('connectionDetails').innerHTML = `
+                    <p style="color: var(--accent-red);">✗ ${errorMsg}</p>
+                    ${helpText}
+                `;
+            }
+
+            showLoading(false);
+        }
+
+        function disconnectSheet() {
+            localStorage.removeItem('guardapolvos_script_url');
+            appState = { scriptUrl: null, connected: false, data: [], ventas: [], lastSync: null };
+            
+            setConnectionStatus('disconnected');
+            document.getElementById('savedUrlInfo').style.display = 'none';
+            document.getElementById('scriptUrl').value = '';
+            document.getElementById('refreshBtn').disabled = true;
+            document.getElementById('newSaleBtn').disabled = true;
+            document.getElementById('connectionDetails').innerHTML = `
+                <p style="color: var(--text-muted);">No hay conexión establecida.</p>
+            `;
+            
+            showToast('Desconectado', 'success');
+        }
+
+        async function refreshData() {
+            if (!appState.connected) return;
+
+            document.getElementById('syncIndicator').classList.add('active');
+
+            try {
+                const response = await fetch(appState.scriptUrl);
+                const result = await response.json();
+
+                if (result.error) throw new Error(result.error);
+
+                appState.data = result.data || [];
+                appState.ventas = appState.data.filter(r => r.Tipo && r.Tipo.toUpperCase() === 'VENTA');
+                appState.lastSync = new Date();
+
+                updateDashboard();
+                renderStock();
+                renderHistory();
+                renderAnalysis();
+
+                showToast(`✓ Datos actualizados (${result.count} registros)`, 'success');
+
+            } catch (error) {
+                showToast('Error al actualizar: ' + error.message, 'error');
+            }
+
+            document.getElementById('syncIndicator').classList.remove('active');
+        }
+
+        // ========== REGISTRAR VENTA ==========
+        async function submitSale(e) {
+            e.preventDefault();
+
+            if (!appState.connected) {
+                showToast('Primero conectá tu Google Sheet', 'error');
+                return;
+            }
+
+            const saleData = {
+                Fecha: new Date().toISOString().split('T')[0],
+                Tipo: 'VENTA',
+                Canal: document.getElementById('canal').value,
+                Color: document.getElementById('color').value,
+                Modelo: document.getElementById('modelo').value,
+                Talle: document.getElementById('talle').value,
+                Cantidad: -Math.abs(parseInt(document.getElementById('cantidad').value)),
+                Pago: document.getElementById('pago').value,
+                Observacion: document.getElementById('observacion').value
+            };
+
+            document.getElementById('submitSaleBtn').disabled = true;
+            document.getElementById('submitSaleBtn').textContent = 'Guardando...';
+
+            try {
+                const response = await fetch(appState.scriptUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'add', data: saleData }),
+                    mode: 'no-cors' // Google Apps Script requiere esto
+                });
+
+                // Con no-cors no podemos leer la respuesta, pero si no hay error asumimos éxito
+                document.getElementById('saleForm').reset();
+                showToast(`✓ Venta guardada: ${Math.abs(saleData.Cantidad)}x ${saleData.Modelo}`, 'success');
+                
+                // Refrescar datos después de 2 segundos
+                setTimeout(refreshData, 2000);
+
+            } catch (error) {
+                showToast('Error al guardar: ' + error.message, 'error');
+            }
+
+            document.getElementById('submitSaleBtn').disabled = false;
+            document.getElementById('submitSaleBtn').textContent = '✓ Guardar en Google Sheets';
+        }
+
+        // ========== DASHBOARD ==========
+        function updateDashboard() {
+            document.getElementById('totalMovimientos').textContent = appState.data.length;
+            document.getElementById('totalVentas').textContent = appState.ventas.length;
+            document.getElementById('lastUpdate').textContent = 'Actualizado: ' + new Date().toLocaleTimeString();
+
+            // Top modelo
+            const modelCount = {};
+            appState.ventas.forEach(v => {
+                if (v.Modelo) modelCount[v.Modelo] = (modelCount[v.Modelo] || 0) + 1;
+            });
+            const topModel = Object.entries(modelCount).sort((a,b) => b[1] - a[1])[0];
+            document.getElementById('topModel').textContent = topModel ? topModel[0] : '-';
+
+            // Top canal
+            const canalCount = {};
+            appState.ventas.forEach(v => {
+                if (v.Canal) canalCount[v.Canal] = (canalCount[v.Canal] || 0) + 1;
+            });
+            const topCanal = Object.entries(canalCount).sort((a,b) => b[1] - a[1])[0];
+            document.getElementById('topChannel').textContent = topCanal ? topCanal[0] : '-';
+        }
+
+        // ========== STOCK ==========
+        function renderStock() {
+            const stock = {};
+            const minStock = 3;
+
+            appState.data.forEach(mov => {
+                const key = `${mov.Modelo}|${mov.Color}`;
+                if (!mov.Modelo || !mov.Color) return;
+
+                if (!stock[key]) {
+                    stock[key] = { modelo: mov.Modelo, color: mov.Color, talles: {0:0,1:0,2:0,3:0,4:0,5:0}, total: 0 };
+                }
+
+                const talle = String(mov.Talle || '').trim();
+                let cant = parseFloat(mov.Cantidad) || 0;
+                const tipo = (mov.Tipo || '').toUpperCase();
+
+                if (tipo === 'VENTA' && cant > 0) cant = -cant;
+                if (tipo === 'PRODUCCIÓN' && cant < 0) cant = Math.abs(cant);
+                if (tipo === 'DEVOLUCIÓN') cant = Math.abs(cant);
+
+                const talleKey = parseInt(talle) >= 5 ? 5 : parseInt(talle);
+                if (!isNaN(talleKey) && stock[key].talles.hasOwnProperty(talleKey)) {
+                    stock[key].talles[talleKey] += cant;
+                }
+            });
+
+            Object.values(stock).forEach(s => {
+                s.total = Object.values(s.talles).reduce((a,b) => a + b, 0);
+            });
+
+            const items = Object.values(stock).sort((a,b) => a.total - b.total);
+            const tbody = document.getElementById('stockTableBody');
+            
+            let critical = 0, warning = 0, ok = 0;
+
+            if (items.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color: var(--text-muted); padding: 40px;">No hay datos de stock</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = items.map(item => {
+                const colorNames = { AZ: 'Azul', BCO: 'Blanco', RAY: 'Rayado', CUADRILLE: 'Cuadrillé' };
+                let status = 'ok', badge = '<span class="stock-badge stock-ok">✅ OK</span>';
+                
+                if (item.total <= 0) {
+                    status = 'critical'; badge = '<span class="stock-badge stock-critical">🚨 Crítico</span>'; critical++;
+                } else if (item.total < minStock * 3) {
+                    status = 'warning'; badge = '<span class="stock-badge stock-low">⚠️ Bajo</span>'; warning++;
+                } else {
+                    ok++;
+                }
+
+                const cells = [0,1,2,3,4,5].map(t => {
+                    const val = Math.round(item.talles[t] || 0);
+                    let cls = 'stock-cell';
+                    if (val <= 0) cls += ' zero';
+                    else if (val < minStock) cls += ' low';
+                    return `<td class="${cls}">${val}</td>`;
+                }).join('');
+
+                return `
+                    <tr data-search="${item.modelo.toLowerCase()} ${(colorNames[item.color] || item.color).toLowerCase()}">
+                        <td><strong>${item.modelo}</strong><br><span style="color: var(--text-muted); font-size: 12px;">${colorNames[item.color] || item.color}</span></td>
+                        ${cells}
+                        <td style="text-align:center; font-weight: 700;">${Math.round(item.total)}</td>
+                        <td>${badge}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            // Update alerts
+            document.getElementById('criticalCount').textContent = critical;
+            document.getElementById('warningCount').textContent = warning;
+            document.getElementById('okCount').textContent = ok;
+            document.getElementById('alertCritical').style.display = critical > 0 ? 'flex' : 'none';
+            document.getElementById('alertWarning').style.display = warning > 0 ? 'flex' : 'none';
+        }
+
+        function filterStockTable() {
+            const term = document.getElementById('searchStock').value.toLowerCase();
+            document.querySelectorAll('#stockTableBody tr').forEach(row => {
+                const search = row.dataset.search || '';
+                row.style.display = search.includes(term) ? '' : 'none';
+            });
+        }
+
+        // ========== HISTORIAL ==========
+        function renderHistory() {
+            const container = document.getElementById('historyContainer');
+            const filter = document.getElementById('filterType').value;
+            
+            let data = appState.data.slice().reverse();
+            if (filter) data = data.filter(r => r.Tipo && r.Tipo.toUpperCase() === filter);
+            
+            if (data.length === 0) {
+                container.innerHTML = '<p style="text-align:center; color: var(--text-muted); padding: 40px;">No hay movimientos</p>';
+                return;
+            }
+
+            container.innerHTML = `<table><thead><tr><th>Fecha</th><th>Tipo</th><th>Producto</th><th>Talle</th><th>Cant.</th><th>Canal</th></tr></thead><tbody>
+                ${data.slice(0, 100).map(row => {
+                    const tipo = (row.Tipo || '').toUpperCase();
+                    let badge = 'stock-ok';
+                    if (tipo === 'VENTA') badge = 'stock-ok';
+                    else if (tipo.includes('PROD')) badge = 'stock-low';
+                    
+                    return `<tr>
+                        <td>${row.Fecha || '-'}</td>
+                        <td><span class="stock-badge ${badge}">${row.Tipo || '-'}</span></td>
+                        <td><strong>${row.Modelo || '-'}</strong> ${row.Color || ''}</td>
+                        <td>${row.Talle || '-'}</td>
+                        <td style="font-weight: 600;">${row.Cantidad || '-'}</td>
+                        <td>${row.Canal || '-'}</td>
+                    </tr>`;
+                }).join('')}
+            </tbody></table>`;
+        }
+
+        // ========== ANÁLISIS ==========
+        function renderAnalysis() {
+            const ventas = appState.ventas;
+            
+            renderChart('chartCanal', groupBy(ventas, 'Canal'), '#2563EB');
+            renderChart('chartModelo', groupBy(ventas, 'Modelo'), '#059669');
+            renderChart('chartColor', groupBy(ventas, 'Color'), '#7C3AED');
+            renderChart('chartTalle', groupBy(ventas, 'Talle'), '#D97706');
+        }
+
+        function groupBy(data, key) {
+            const result = {};
+            data.forEach(row => {
+                if (row[key]) result[row[key]] = (result[row[key]] || 0) + 1;
+            });
+            return result;
+        }
+
+        function renderChart(id, data, color) {
+            const container = document.getElementById(id);
+            const entries = Object.entries(data).sort((a,b) => b[1] - a[1]).slice(0, 8);
+            
+            if (entries.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-muted); text-align: center;">Sin datos</p>';
+                return;
+            }
+
+            const max = Math.max(...entries.map(e => e[1]));
+            container.innerHTML = entries.map(([label, value]) => `
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                    <div style="width: 70px; font-size: 12px; text-align: right; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${label}</div>
+                    <div style="flex: 1; height: 20px; background: var(--bg-accent); border-radius: 4px; overflow: hidden;">
+                        <div style="width: ${(value/max)*100}%; height: 100%; background: ${color}; border-radius: 4px;"></div>
+                    </div>
+                    <div style="width: 30px; font-size: 13px; font-weight: 600;">${value}</div>
+                </div>
+            `).join('');
+        }
+
+        // ========== UTILIDADES ==========
+        function setConnectionStatus(status) {
+            const el = document.getElementById('connectionStatus');
+            const text = document.getElementById('connectionText');
+            el.className = 'connection-status ' + status;
+            text.textContent = status === 'connected' ? 'Conectado' : status === 'connecting' ? 'Conectando...' : 'Desconectado';
+        }
+
+        function showLoading(show, text = 'Cargando...') {
+            document.getElementById('loadingOverlay').classList.toggle('active', show);
+            document.getElementById('loadingText').textContent = text;
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMessage').textContent = message;
+            document.getElementById('toastIcon').textContent = type === 'success' ? '✓' : '⚠';
+            toast.className = `toast ${type} show`;
+            setTimeout(() => toast.classList.remove('show'), 3500);
+        }
+    </script>
+</body>
+</html>
